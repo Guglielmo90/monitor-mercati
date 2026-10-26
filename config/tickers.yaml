@@ -58,6 +58,9 @@ aree:
       - { ticker: "CSSPX.MI", nome: "iShares Core S&P 500",           gruppo: "USA" }
       - { ticker: "EQQQ.MI",  nome: "Invesco Nasdaq-100",             gruppo: "USA" }
       - { ticker: "VUSA.MI",  nome: "Vanguard S&P 500 Dist",          gruppo: "USA" }
+      - { ticker: "VUAA.MI",  nome: "Vanguard S&P 500 Acc",           gruppo: "USA" }
+      - { ticker: "V60A.MI",  nome: "Vanguard LifeStrategy 60% Acc",  gruppo: "Multi-asset" }
+      - { ticker: "JEDI.MI",  nome: "VanEck Space Innovators (JEDI)", gruppo: "Tematico" }
       - { ticker: "EIMI.MI",  nome: "iShares Core MSCI EM IMI",       gruppo: "Emergenti" }
       - { ticker: "IMIB.MI",  nome: "iShares FTSE MIB",               gruppo: "Italia" }
       - { ticker: "CSSX5E.MI",nome: "iShares Core EURO STOXX 50",     gruppo: "Europa" }
