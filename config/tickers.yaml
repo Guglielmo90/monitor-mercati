@@ -59,7 +59,7 @@ aree:
       - { ticker: "EQQQ.MI",  nome: "Invesco Nasdaq-100",             gruppo: "USA" }
       - { ticker: "VUSA.MI",  nome: "Vanguard S&P 500 Dist",          gruppo: "USA" }
       - { ticker: "VUAA.MI",  nome: "Vanguard S&P 500 Acc",           gruppo: "USA" }
-      - { ticker: "VNGA60.MI",nome: "Vanguard LifeStrategy 60% Acc",  gruppo: "Multi-asset" }
+      - { ticker: "V60A.DE",  nome: "Vanguard LifeStrategy 60% Acc",  gruppo: "Multi-asset" }  # quotazione Xetra: storico Yahoo più completo di VNGA60.MI
       - { ticker: "JEDI.MI",  nome: "VanEck Space Innovators (JEDI)", gruppo: "Tematico" }
       - { ticker: "EIMI.MI",  nome: "iShares Core MSCI EM IMI",       gruppo: "Emergenti" }
       - { ticker: "IMIB.MI",  nome: "iShares FTSE MIB",               gruppo: "Italia" }
