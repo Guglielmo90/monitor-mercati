@@ -325,6 +325,7 @@ function renderAreaChart(){
   });
   const o=baseOpts(); o.scales.y.ticks.callback=v=>(v>0?"+":"")+v+"%";
   o.scales.y.grid.color=c=>c.tick&&c.tick.value===0?css("--axis"):css("--grid");
+  o.scales.y.title={display:true,text:"Variazione % dall'inizio del periodo",color:css("--muted"),font:{size:11}};
   o.plugins.tooltip.callbacks={label:c=>` ${pf(c.parsed.y,1)}  ${c.dataset.label}`};
   mk("c-areas",{type:"line",data:{labels:labels.map(shortDate),datasets:ds},options:o});
 }
@@ -406,6 +407,9 @@ function renderSel(){
         lineDs("Media mobile 30 sett.",sma(s.all,30,s.d),css("--ink-2"),{borderWidth:1.5,borderDash:[2,3]})];
     o.plugins.tooltip.callbacks={label:c=>` ${nf(c.parsed.y,2)} ${t.valuta}  ${c.dataset.label}`};
     o.plugins.legend={display:true,position:"top",align:"start",labels:{color:css("--ink-2"),boxWidth:16,boxHeight:2,font:{size:12}}};
+    const sym={USD:"$",EUR:"€",GBP:"£"}[t.valuta]||t.valuta;
+    o.scales.y.ticks.callback=v=>nf(v,v<10?2:0)+" "+sym;
+    o.scales.y.title={display:true,text:`Prezzo di chiusura settimanale (${t.valuta})`,color:css("--muted"),font:{size:11}};
   } else {
     // unione delle date, ribasate a 100
     const sets=state.sel.map(tk=>seriesSlice(tk));
@@ -415,6 +419,8 @@ function renderSel(){
       return lineDs(BY[tk].nome, vals.map(v=>v==null?null:v/b*100), css(`--s${state.colorOf[tk]}`)); });
     o.plugins.tooltip.callbacks={label:c=>` ${nf(c.parsed.y,1)}  (${pf(c.parsed.y-100,1)})  ${c.dataset.label}`};
     o.plugins.tooltip.itemSort=(a,b)=>b.parsed.y-a.parsed.y; // legenda = chip colorati sopra il grafico
+    o.scales.y.ticks.callback=v=>nf(v,0);
+    o.scales.y.title={display:true,text:"Indice (100 = inizio periodo)",color:css("--muted"),font:{size:11}};
   }
   mk("c-sel",{type:"line",data:{labels:labels.map(shortDate),datasets:ds},options:o});
   renderDetail();
