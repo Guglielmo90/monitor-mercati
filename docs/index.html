@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor Mercati Settimanale</title>
+<script src="chart.umd.min.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb; --surface-2:#f3f2ee;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --s8:#e34948;
+  --pos:#2a78d6; --neg:#e34948; --mid:#f0efec;
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  --up-text:#006300; --down-text:#c03030;
+  --accent:#2a78d6;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#242422;
+    --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+    --pos:#3987e5; --neg:#e66767; --mid:#383835;
+    --up-text:#0ca30c; --down-text:#e66767; --accent:#3987e5;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface:#1a1a19; --surface-2:#242422;
+  --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+  --pos:#3987e5; --neg:#e66767; --mid:#383835;
+  --up-text:#0ca30c; --down-text:#e66767; --accent:#3987e5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1320px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+h1{font-size:22px;margin:0 0 4px;font-weight:650;letter-spacing:-.01em}
+h2{font-size:16px;margin:0 0 2px;font-weight:600}
+.sub{color:var(--ink-2);font-size:13px}
+.muted{color:var(--muted);font-size:12px}
+.banner{border:1px solid var(--border);border-left:4px solid var(--warning);background:var(--surface);padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;min-width:0}
+section{margin-top:22px}
+.section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:1000px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.grid4,.grid2{grid-template-columns:1fr}}
+/* filtri */
+.filters{position:sticky;top:0;z-index:5;background:var(--page);padding:10px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-bottom:1px solid var(--border)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;color:var(--ink-2);padding:6px 11px;font:inherit;font-size:13px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface-2);color:var(--ink);font-weight:600}
+.seg button:hover{background:var(--surface-2)}
+select,input[type=search]{font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink)}
+.flabel{font-size:12px;color:var(--muted);margin-right:-4px}
+/* KPI area */
+.kpi .top{display:flex;align-items:center;gap:8px}
+.dot{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.kpi .big{font-size:28px;font-weight:600;margin:6px 0 2px}
+.kpi .row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);margin-top:4px;gap:8px}
+.kpi .row b{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.up{color:var(--up-text)} .down{color:var(--down-text)}
+.chartbox{position:relative;width:100%}
+/* selettore titoli */
+.picker{display:grid;grid-template-columns:300px minmax(0,1fr);gap:12px}
+@media (max-width:860px){.picker{grid-template-columns:1fr}}
+.list{max-height:460px;overflow:auto;border:1px solid var(--border);border-radius:8px;margin-top:8px}
+.list .grp{position:sticky;top:0;background:var(--surface-2);font-size:11.5px;font-weight:600;color:var(--ink-2);padding:5px 10px;text-transform:uppercase;letter-spacing:.04em}
+.list label{display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;font-size:13px;border-top:1px solid var(--border)}
+.list label:hover{background:var(--surface-2)}
+.list label .t{color:var(--muted);font-size:11.5px;margin-left:auto}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:999px;padding:3px 6px 3px 10px;font-size:12.5px;background:var(--surface)}
+.chip button{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 4px}
+.chip .key{width:14px;height:3px;border-radius:2px}
+.btn{font:inherit;font-size:12.5px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);border-radius:8px;padding:5px 10px;cursor:pointer}
+.btn:hover{background:var(--surface-2)}
+.detail{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px}
+.detail .card{padding:12px}
+.detail dl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin:8px 0 0;font-size:12.5px}
+.detail dt{color:var(--ink-2);white-space:nowrap} .detail dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+/* tabella */
+.tablewrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface);max-height:640px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
+th{position:sticky;top:0;background:var(--surface-2);font-weight:600;color:var(--ink-2);cursor:pointer;user-select:none;font-size:12px}
+th:first-child,td:first-child,th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3){text-align:left}
+td{font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer} tbody tr:hover{background:var(--surface-2)}
+tbody tr.sel{box-shadow:inset 3px 0 0 var(--accent)}
+.scorebar{display:inline-flex;align-items:center;gap:6px}
+.scorebar span.b{display:inline-block;height:6px;border-radius:0 3px 3px 0;background:var(--s1)}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);color:var(--ink)}
+.badge i{font-style:normal;font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--ink-2);margin:4px 0 8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend .ln{width:16px;height:3px;border-radius:2px;display:inline-block}
+.legend .bx{width:10px;height:10px;border-radius:2px;display:inline-block}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.tile .v{font-size:22px;font-weight:600;margin-top:2px}
+details summary{cursor:pointer;color:var(--ink-2)}
+footer{margin-top:30px;color:var(--muted);font-size:12px;line-height:1.6}
+.empty{color:var(--muted);padding:30px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Monitor mercati settimanale</h1>
+      <div class="sub" id="subtitle"></div>
+    </div>
+    <div class="muted" id="sources"></div>
+  </header>
+  <div id="banners"></div>
+
+  <div class="filters" role="toolbar" aria-label="Filtri">
+    <span class="flabel">Periodo</span>
+    <div class="seg" id="f-period">
+      <button data-v="12">12 sett.</button><button data-v="26">6 mesi</button>
+      <button data-v="52" aria-pressed="true">1 anno</button><button data-v="156">3 anni</button>
+    </div>
+    <span class="flabel">Area</span>
+    <select id="f-area"><option value="all">Tutte le aree</option></select>
+    <span class="flabel">Segnale</span>
+    <select id="f-signal"><option value="all">Tutti i segnali</option></select>
+    <input type="search" id="f-search" placeholder="Cerca titolo o ticker…" aria-label="Cerca titolo">
+  </div>
+
+  <!-- 1. Panoramica -->
+  <section>
+    <div class="section-head"><div><h2>Panoramica delle 4 aree</h2><div class="muted">Media equipesata della variazione settimanale dei titoli di ciascuna area</div></div></div>
+    <div class="grid4" id="kpis"></div>
+    <div class="card" style="margin-top:12px">
+      <h2>Andamento delle aree</h2>
+      <div class="muted">Indice equipesato, base 100 all'inizio del periodo selezionato</div>
+      <div class="legend" id="legend-areas"></div>
+      <div class="chartbox" style="height:300px"><canvas id="c-areas" aria-label="Andamento indici d'area"></canvas></div>
+    </div>
+  </section>
+
+  <!-- 2. Variazione settimanale per area -->
+  <section>
+    <div class="section-head"><div><h2>Variazione dell'ultima settimana, per area</h2><div class="muted">Ordinati dal migliore al peggiore · clic su una barra per aggiungere il titolo al confronto</div></div>
+      <div class="legend"><span><i class="bx" style="background:var(--pos)"></i>Rialzo</span><span><i class="bx" style="background:var(--neg)"></i>Ribasso</span></div></div>
+    <div class="grid2" id="bars"></div>
+  </section>
+
+  <!-- 3. Analisi titoli -->
+  <section>
+    <div class="section-head"><div><h2>Analisi titoli selezionati</h2><div class="muted">Seleziona fino a 8 titoli. Con un solo titolo vedi prezzo e medie mobili; con più titoli il confronto in base 100.</div></div></div>
+    <div class="picker">
+      <div class="card">
+        <input type="search" id="pick-search" placeholder="Filtra elenco…" style="width:100%" aria-label="Filtra elenco titoli">
+        <div class="list" id="pick-list"></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <div class="chips" id="chips"></div>
+          <button class="btn" id="clear-sel">Svuota selezione</button>
+        </div>
+        <div class="chartbox" style="height:360px"><canvas id="c-sel" aria-label="Andamento titoli selezionati"></canvas></div>
+        <div class="empty" id="sel-empty" hidden>Seleziona uno o più titoli dall'elenco, dai grafici o dalla tabella.</div>
+      </div>
+    </div>
+    <div class="detail" id="detail"></div>
+  </section>
+
+  <!-- 4. Classifica -->
+  <section>
+    <div class="section-head"><div><h2>Classifica e segnali</h2><div class="muted">Punteggio 0–100 relativo all'area: momentum 12 e 4 settimane, trend delle medie mobili, rendimento/rischio, distanza dal massimo a 52 settimane. Clic su una riga per analizzarla.</div></div>
+      <button class="btn" id="dl-csv">Scarica CSV</button></div>
+    <div class="tablewrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+  </section>
+
+  <!-- 5. Rendimenti -->
+  <section>
+    <div class="section-head"><div><h2>Rendimenti dei titoli di Stato</h2><div class="muted">Valori in %, variazione in punti base rispetto alla rilevazione precedente</div></div></div>
+    <div class="tiles" id="y-tiles"></div>
+    <div class="grid2">
+      <div class="card"><h2>Rendimenti settimanali</h2><div class="legend" id="legend-yw"></div><div class="chartbox" style="height:260px"><canvas id="c-yw"></canvas></div></div>
+      <div class="card"><h2>BTP e Bund 10 anni (mensile)</h2><div class="legend" id="legend-ym"></div><div class="chartbox" style="height:260px"><canvas id="c-ym"></canvas></div></div>
+    </div>
+  </section>
+
+  <section id="warn-sec"></section>
+
+  <footer>
+    <b>Come leggere i segnali</b> — <i>Momentum forte</i>: punteggio ≥ 70 e trend rialzista. <i>Ribasso in trend positivo</i>: calo settimanale ≥ 2% con media mobile 10 sett. sopra quella a 30 sett. (possibile punto d'ingresso da valutare). <i>Ipercomprato / Ipervenduto</i>: RSI settimanale ≥ 70 / ≤ 30. <i>Debole</i>: punteggio ≤ 30 e trend ribassista.<br>
+    Strumento di analisi quantitativa a scopo informativo: non costituisce consulenza finanziaria né sollecitazione all'investimento. Dati gratuiti con possibili ritardi o errori; prezzi nella valuta di quotazione.
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function(){
+"use strict";
+const D = window.DASHBOARD_DATA;
+if(!D){document.querySelector(".wrap").insertAdjacentHTML("beforeend","<p class='empty'>Dati non trovati (data.js mancante).</p>");return;}
+
+const AREA_KEYS = Object.keys(D.aree);
+const AREA_SLOT = {azioni:1, etf:2, obbligazioni:3, commodities:4};
+const SIGNALS = {
+  "Momentum forte":{icon:"▲",color:"--good"},
+  "Ribasso in trend positivo":{icon:"↘",color:"--s1"},
+  "Ipervenduto":{icon:"◆",color:"--warning"},
+  "Ipercomprato":{icon:"!",color:"--serious"},
+  "Debole":{icon:"▼",color:"--critical"},
+  "Neutro":{icon:"•",color:"--muted"}
+};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const ALL = []; AREA_KEYS.forEach(k=>D.aree[k].titoli.forEach(t=>ALL.push(t)));
+const BY = Object.fromEntries(ALL.map(t=>[t.ticker,t]));
+
+const state = {period:52, area:"all", signal:"all", q:"", sel:[], colorOf:{}, sortKey:"punteggio", sortDir:-1};
+
+// ---------- helpers ----------
+const el = (tag, attrs={}, ...kids) => {
+  const e=document.createElement(tag);
+  for(const [k,v] of Object.entries(attrs)){
+    if(k==="class") e.className=v; else if(k==="style") e.style.cssText=v;
+    else if(k.startsWith("on")) e.addEventListener(k.slice(2),v); else e.setAttribute(k,v);
+  }
+  kids.flat().forEach(c=>{ if(c==null) return; e.append(c instanceof Node?c:document.createTextNode(String(c))); });
+  return e;
+};
+const nf = (v,d=2)=> v==null? "–" : v.toLocaleString("it-IT",{minimumFractionDigits:d,maximumFractionDigits:d});
+const pf = (v,d=1)=> v==null? "–" : (v>0?"+":"")+nf(v,d)+"%";
+const cls = v => v==null? "" : v>0? "up" : v<0? "down" : "";
+const fdate = s => { const [y,m,d]=s.split("-"); return `${d}/${m}/${y}`; };
+const mean = a => { const f=a.filter(x=>x!=null); return f.length? f.reduce((s,x)=>s+x,0)/f.length : null; };
+const matches = t => (state.area==="all"||t.area===state.area) && (state.signal==="all"||t.segnale===state.signal)
+  && (!state.q || (t.nome+" "+t.ticker).toLowerCase().includes(state.q));
+
+// ---------- header ----------
+const M = D.meta;
+document.getElementById("subtitle").textContent =
+  `Chiusura settimana al ${fdate(M.settimana_al)} · aggiornato il ${fdate(M.generato_il.slice(0,10))} alle ${M.generato_il.slice(11)} · ${M.titoli_scaricati}/${M.titoli_richiesti} titoli`;
+document.getElementById("sources").textContent = "Fonti: " + M.fonti.join(", ");
+const banners = document.getElementById("banners");
+if(M.demo) banners.append(el("div",{class:"banner"}, el("b",{},"DATI DIMOSTRATIVI — "), "i valori sono simulati per provare la dashboard. Dal primo aggiornamento automatico vedrai i dati reali."));
+if(M.settimana_parziale) banners.append(el("div",{class:"banner"}, "Settimana in corso: i dati si riferiscono all'ultima seduta disponibile, non alla chiusura del venerdì."));
+
+// ---------- filtri ----------
+const fArea = document.getElementById("f-area");
+AREA_KEYS.forEach(k=>fArea.append(el("option",{value:k},D.aree[k].nome)));
+const fSig = document.getElementById("f-signal");
+Object.keys(SIGNALS).forEach(s=>fSig.append(el("option",{value:s},s)));
+document.querySelectorAll("#f-period button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("#f-period button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+  state.period=+b.dataset.v; renderAreaChart(); renderSel();
+}));
+fArea.addEventListener("change",()=>{state.area=fArea.value; renderBars(); renderTable(); renderPicker();});
+fSig.addEventListener("change",()=>{state.signal=fSig.value; renderBars(); renderTable(); renderPicker();});
+document.getElementById("f-search").addEventListener("input",e=>{state.q=e.target.value.trim().toLowerCase(); renderBars(); renderTable(); renderPicker();});
+
+// ---------- Chart.js defaults ----------
+const charts = {};
+function baseOpts(){
+  return {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    interaction:{mode:"index",intersect:false},
+    plugins:{legend:{display:false},
+      tooltip:{backgroundColor:css("--surface"),titleColor:css("--ink-2"),bodyColor:css("--ink"),borderColor:css("--axis"),borderWidth:1,
+        padding:10,boxWidth:14,boxHeight:3,usePointStyle:false,bodyFont:{weight:"600"}}},
+    scales:{
+      x:{grid:{display:false},border:{color:css("--axis")},ticks:{color:css("--muted"),maxRotation:0,autoSkipPadding:18,font:{size:11}}},
+      y:{grid:{color:css("--grid")},border:{display:false},ticks:{color:css("--muted"),font:{size:11}}}
+    }
+  };
+}
+const crosshair = {id:"crosshair", afterDraw(c){
+  const a=c.tooltip&&c.tooltip.getActiveElements&&c.tooltip.getActiveElements();
+  if(!a||!a.length||c.config.type!=="line") return;
+  const x=a[0].element.x, {top,bottom}=c.chartArea, ctx=c.ctx;
+  ctx.save(); ctx.strokeStyle=css("--axis"); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,bottom); ctx.stroke(); ctx.restore();
+}};
+Chart.register(crosshair);
+function mk(id,cfg){ if(charts[id]) charts[id].destroy(); charts[id]=new Chart(document.getElementById(id),cfg); return charts[id]; }
+const shortDate = s => { const [y,m,d]=s.split("-"); return `${d}/${m}/${y.slice(2)}`; };
+const lineDs = (label,data,color,extra={}) => ({label,data,borderColor:color,backgroundColor:color,borderWidth:2,pointRadius:0,pointHoverRadius:4,pointHoverBorderWidth:2,pointHoverBorderColor:css("--surface"),tension:0.15,spanGaps:true,...extra});
+
+// ---------- 1. KPI ----------
+function renderKpis(){
+  const box=document.getElementById("kpis"); box.replaceChildren();
+  AREA_KEYS.forEach(k=>{
+    const ts=D.aree[k].titoli, avg=mean(ts.map(t=>t.var_1s));
+    const sorted=[...ts].filter(t=>t.var_1s!=null).sort((a,b)=>b.var_1s-a.var_1s);
+    const up=ts.filter(t=>t.var_1s>0).length, dn=ts.filter(t=>t.var_1s<0).length;
+    const best=sorted[0], worst=sorted[sorted.length-1];
+    const avg4=mean(ts.map(t=>t.var_4s));
+    box.append(el("div",{class:"card kpi"},
+      el("div",{class:"top"}, el("span",{class:"dot",style:`background:var(--s${AREA_SLOT[k]||5})`}), el("h2",{},D.aree[k].nome), el("span",{class:"muted",style:"margin-left:auto"},`${ts.length} titoli`)),
+      el("div",{class:"big "+cls(avg)}, pf(avg,2)),
+      el("div",{class:"muted"},`Ultime 4 settimane: ${pf(avg4,1)} · in rialzo ${up}, in ribasso ${dn}`),
+      best? el("div",{class:"row"}, el("span",{},"Migliore"), el("b",{},`${best.nome} `, el("span",{class:"up"},pf(best.var_1s)))):null,
+      worst? el("div",{class:"row"}, el("span",{},"Peggiore"), el("b",{},`${worst.nome} `, el("span",{class:"down"},pf(worst.var_1s)))):null
+    ));
+  });
+}
+
+// ---------- 1b. Indici d'area ----------
+function renderAreaChart(){
+  const lg=document.getElementById("legend-areas"); lg.replaceChildren();
+  const keys=AREA_KEYS.filter(k=>D.indici_area[k]);
+  const ref=D.indici_area[keys[0]]; const n=Math.min(state.period+1, ref.d.length);
+  const labels=ref.d.slice(-n);
+  const ds=keys.map(k=>{
+    const s=D.indici_area[k]; const map=Object.fromEntries(s.d.map((d,i)=>[d,s.v[i]]));
+    const vals=labels.map(d=>map[d]??null); const b=vals.find(v=>v!=null);
+    const color=css(`--s${AREA_SLOT[k]||5}`);
+    const reb=vals.map(v=>v==null?null:v/b*100);
+    const last=reb[reb.length-1];
+    lg.append(el("span",{},el("i",{class:"ln",style:`background:${color}`}), `${D.aree[k].nome} `, el("b",{class:cls(last-100)}, pf(last-100,1))));
+    return lineDs(D.aree[k].nome, reb, color);
+  });
+  const o=baseOpts(); o.plugins.tooltip.callbacks={label:c=>` ${nf(c.parsed.y,1)}  ${c.dataset.label}`};
+  mk("c-areas",{type:"line",data:{labels:labels.map(shortDate),datasets:ds},options:o});
+}
+
+// ---------- 2. Barre variazione settimanale ----------
+function renderBars(){
+  const box=document.getElementById("bars"); box.replaceChildren();
+  AREA_KEYS.forEach(k=>{
+    if(state.area!=="all" && state.area!==k) return;
+    const ts=D.aree[k].titoli.filter(matches).filter(t=>t.var_1s!=null).sort((a,b)=>b.var_1s-a.var_1s);
+    const id="c-bar-"+k, h=Math.max(120, ts.length*20+40);
+    box.append(el("div",{class:"card"},
+      el("div",{class:"top",style:"display:flex;gap:8px;align-items:center"}, el("span",{class:"dot",style:`background:var(--s${AREA_SLOT[k]||5})`}), el("h2",{},D.aree[k].nome)),
+      ts.length? el("div",{class:"chartbox",style:`height:${h}px;margin-top:8px`}, el("canvas",{id,"aria-label":"Variazione settimanale "+D.aree[k].nome}))
+               : el("div",{class:"empty"},"Nessun titolo corrisponde ai filtri")));
+    if(!ts.length) return;
+    const o=baseOpts(); o.indexAxis="y"; o.interaction={mode:"nearest",axis:"y",intersect:false};
+    o.scales.x={grid:{color:css("--grid")},border:{display:false},ticks:{color:css("--muted"),font:{size:11},callback:v=>v+"%"}};
+    o.scales.y={grid:{display:false},border:{color:css("--axis")},ticks:{color:css("--ink-2"),font:{size:11.5},autoSkip:false}};
+    o.plugins.tooltip.callbacks={title:c=>{const t=ts[c[0].dataIndex];return `${t.nome} (${t.ticker})`;},
+      label:c=>{const t=ts[c.dataIndex];return [` Settimana ${pf(t.var_1s,2)}`,` 4 sett. ${pf(t.var_4s)} · 12 sett. ${pf(t.var_12s)}`,` Segnale: ${t.segnale}`];}};
+    o.onClick=(e,els)=>{ if(els.length) addSel(ts[els[0].index].ticker); };
+    o.onHover=(e,els)=>{ e.native.target.style.cursor=els.length?"pointer":"default"; };
+    const pos=css("--pos"), neg=css("--neg");
+    mk(id,{type:"bar",data:{labels:ts.map(t=>t.nome),datasets:[{data:ts.map(t=>t.var_1s),
+      backgroundColor:ts.map(t=>t.var_1s>=0?pos:neg),borderRadius:4,borderSkipped:"start",barPercentage:.78,categoryPercentage:.9}]},options:o});
+  });
+}
+
+// ---------- 3. Selettore e confronto ----------
+const PALETTE_SLOTS=[1,2,3,4,5,6,7,8];
+function addSel(tk){
+  if(state.sel.includes(tk)) return;
+  if(state.sel.length>=8){ alertMsg("Massimo 8 titoli: rimuovine uno per aggiungerne un altro."); return; }
+  const used=new Set(state.sel.map(t=>state.colorOf[t]));
+  state.colorOf[tk]=PALETTE_SLOTS.find(s=>!used.has(s));
+  state.sel.push(tk); renderSel(); renderPicker(); renderTable();
+  document.getElementById("c-sel").scrollIntoView({behavior:"smooth",block:"center"});
+}
+function removeSel(tk){ state.sel=state.sel.filter(t=>t!==tk); delete state.colorOf[tk]; renderSel(); renderPicker(); renderTable(); }
+function alertMsg(m){ const c=document.getElementById("chips"); const n=el("span",{class:"muted"},m); c.append(n); setTimeout(()=>n.remove(),3500); }
+document.getElementById("clear-sel").addEventListener("click",()=>{state.sel=[];state.colorOf={};renderSel();renderPicker();renderTable();});
+document.getElementById("pick-search").addEventListener("input",renderPicker);
+
+function renderPicker(){
+  const q=document.getElementById("pick-search").value.trim().toLowerCase();
+  const box=document.getElementById("pick-list"); box.replaceChildren();
+  AREA_KEYS.forEach(k=>{
+    const ts=D.aree[k].titoli.filter(matches).filter(t=>!q||(t.nome+" "+t.ticker).toLowerCase().includes(q))
+      .sort((a,b)=>a.nome.localeCompare(b.nome));
+    if(!ts.length) return;
+    box.append(el("div",{class:"grp"},D.aree[k].nome));
+    ts.forEach(t=>{
+      const cb=el("input",{type:"checkbox"}); cb.checked=state.sel.includes(t.ticker);
+      cb.addEventListener("change",()=> cb.checked? addSel(t.ticker) : removeSel(t.ticker));
+      box.append(el("label",{},cb,el("span",{},t.nome),el("span",{class:"t"},t.ticker)));
+    });
+  });
+}
+
+function seriesSlice(tk){ const s=D.serie[tk]; if(!s) return null; const n=Math.min(state.period+1,s.d.length); return {d:s.d.slice(-n),c:s.c.slice(-n),all:s}; }
+function sma(all,n,dates){ const map={}; for(let i=n-1;i<all.c.length;i++){ let s=0; for(let j=i-n+1;j<=i;j++) s+=all.c[j]; map[all.d[i]]=s/n; } return dates.map(d=>map[d]??null); }
+
+function renderSel(){
+  const chips=document.getElementById("chips"); chips.replaceChildren();
+  const empty=document.getElementById("sel-empty"), canvas=document.getElementById("c-sel");
+  state.sel.forEach(tk=>{ const t=BY[tk];
+    chips.append(el("span",{class:"chip"}, el("i",{class:"key",style:`background:var(--s${state.colorOf[tk]})`}), `${t.nome}`,
+      el("button",{"aria-label":"Rimuovi "+t.nome,onclick:()=>removeSel(tk)},"×")));
+  });
+  if(!state.sel.length){ if(charts["c-sel"]){charts["c-sel"].destroy();delete charts["c-sel"];} canvas.hidden=true; empty.hidden=false; renderDetail(); return; }
+  canvas.hidden=false; empty.hidden=true;
+  const o=baseOpts(); let labels, ds;
+  if(state.sel.length===1){
+    const tk=state.sel[0], s=seriesSlice(tk), t=BY[tk], col=css(`--s${state.colorOf[tk]}`);
+    labels=s.d;
+    ds=[lineDs(`${t.nome}`,s.c,col),
+        lineDs("Media mobile 10 sett.",sma(s.all,10,s.d),css("--muted"),{borderWidth:1.5,borderDash:[5,4]}),
+        lineDs("Media mobile 30 sett.",sma(s.all,30,s.d),css("--ink-2"),{borderWidth:1.5,borderDash:[2,3]})];
+    o.plugins.tooltip.callbacks={label:c=>` ${nf(c.parsed.y,2)} ${t.valuta}  ${c.dataset.label}`};
+    o.plugins.legend={display:true,position:"top",align:"start",labels:{color:css("--ink-2"),boxWidth:16,boxHeight:2,font:{size:12}}};
+  } else {
+    // unione delle date, ribasate a 100
+    const sets=state.sel.map(tk=>seriesSlice(tk));
+    labels=[...new Set(sets.flatMap(s=>s.d))].sort();
+    ds=state.sel.map((tk,i)=>{ const s=sets[i], map=Object.fromEntries(s.d.map((d,j)=>[d,s.c[j]]));
+      const vals=labels.map(d=>map[d]??null); const b=vals.find(v=>v!=null);
+      return lineDs(BY[tk].nome, vals.map(v=>v==null?null:v/b*100), css(`--s${state.colorOf[tk]}`)); });
+    o.plugins.tooltip.callbacks={label:c=>` ${nf(c.parsed.y,1)}  (${pf(c.parsed.y-100,1)})  ${c.dataset.label}`};
+    o.plugins.tooltip.itemSort=(a,b)=>b.parsed.y-a.parsed.y; // legenda = chip colorati sopra il grafico
+  }
+  mk("c-sel",{type:"line",data:{labels:labels.map(shortDate),datasets:ds},options:o});
+  renderDetail();
+}
+
+function renderDetail(){
+  const box=document.getElementById("detail"); box.replaceChildren();
+  state.sel.forEach(tk=>{ const t=BY[tk];
+    const rows=[["Ultimo prezzo",`${nf(t.ultimo,2)} ${t.valuta}`],["Var. settimana",pf(t.var_1s,2),cls(t.var_1s)],["Var. 4 sett.",pf(t.var_4s),cls(t.var_4s)],
+      ["Var. 12 sett.",pf(t.var_12s),cls(t.var_12s)],["Var. 52 sett.",pf(t.var_52s),cls(t.var_52s)],["Da inizio anno",pf(t.ytd),cls(t.ytd)],
+      ["Dal max 52 sett.",pf(t.dist_max_52s)],["RSI (14 sett.)",nf(t.rsi,0)],["Volatilità annua",t.volatilita==null?"–":nf(t.volatilita,1)+"%"],
+      ["Trend",t.trend],["Punteggio",`${nf(t.punteggio,0)} / 100`]];
+    box.append(el("div",{class:"card"},
+      el("div",{style:"display:flex;align-items:center;gap:8px"}, el("i",{class:"dot",style:`background:var(--s${state.colorOf[tk]})`}), el("b",{},t.nome), el("span",{class:"muted",style:"margin-left:auto"},t.ticker)),
+      el("div",{style:"margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"}, badge(t.segnale), el("span",{class:"muted"},`${t.posizione}° su ${D.aree[t.area].titoli.length} in ${D.aree[t.area].nome}`)),
+      el("dl",{}, rows.flatMap(([a,b,c])=>[el("dt",{},a),el("dd",{class:c||""},b)]))));
+  });
+}
+
+function badge(s){ const g=SIGNALS[s]||SIGNALS.Neutro; return el("span",{class:"badge"}, el("i",{style:`color:var(${g.color})`},g.icon), s); }
+
+// ---------- 4. Tabella ----------
+const COLS=[["posizione","#"],["nome","Titolo"],["area","Area · gruppo"],["ultimo","Ultimo"],["var_1s","1 sett."],["var_4s","4 sett."],["var_12s","12 sett."],["var_52s","52 sett."],["ytd","YTD"],["dist_max_52s","Dal max 52s"],["rsi","RSI"],["volatilita","Volatilità"],["trend","Trend"],["punteggio","Punteggio"],["segnale","Segnale"]];
+function renderTable(){
+  const thead=document.querySelector("#tbl thead"), tbody=document.querySelector("#tbl tbody");
+  thead.replaceChildren(el("tr",{},COLS.map(([k,l])=>el("th",{onclick:()=>{ if(state.sortKey===k) state.sortDir*=-1; else {state.sortKey=k; state.sortDir=(k==="nome"||k==="area"||k==="posizione")?1:-1;} renderTable(); }},
+    l+(state.sortKey===k?(state.sortDir>0?" ▲":" ▼"):"")))));
+  const rows=ALL.filter(matches).sort((a,b)=>{ const k=state.sortKey; let x=a[k],y=b[k];
+    if(k==="area"){x=a.area+a.gruppo;y=b.area+b.gruppo;}
+    if(x==null) return 1; if(y==null) return -1;
+    return (typeof x==="string"? x.localeCompare(y) : x-y)*state.sortDir; });
+  tbody.replaceChildren(...rows.map(t=>{
+    const tr=el("tr",{class:state.sel.includes(t.ticker)?"sel":"",onclick:()=> state.sel.includes(t.ticker)? removeSel(t.ticker) : addSel(t.ticker)},
+      el("td",{},t.posizione),
+      el("td",{},el("b",{},t.nome)," ",el("span",{class:"muted"},t.ticker)),
+      el("td",{},`${D.aree[t.area].nome} · ${t.gruppo}`),
+      el("td",{},`${nf(t.ultimo,2)} ${t.valuta}`),
+      ...["var_1s","var_4s","var_12s","var_52s","ytd","dist_max_52s"].map(k=>el("td",{class:cls(t[k])},pf(t[k]))),
+      el("td",{},nf(t.rsi,0)), el("td",{},t.volatilita==null?"–":nf(t.volatilita,1)+"%"), el("td",{},t.trend),
+      el("td",{},el("span",{class:"scorebar"},el("span",{class:"b",style:`width:${Math.round((t.punteggio||0)*0.5)}px`}),nf(t.punteggio,0))),
+      el("td",{style:"text-align:left"},badge(t.segnale)));
+    return tr;
+  }));
+}
+document.getElementById("dl-csv").addEventListener("click",()=>{
+  const keys=["posizione","ticker","nome","area","gruppo","valuta","ultimo","var_1s","var_4s","var_12s","var_26s","var_52s","ytd","dist_max_52s","rsi","volatilita","trend","punteggio","segnale"];
+  const lines=[keys.join(";")].concat(ALL.filter(matches).map(t=>keys.map(k=>{const v=t[k]; return v==null?"":typeof v==="number"? String(v).replace(".",","):`"${String(v).replace(/"/g,'""')}"`;}).join(";")));
+  const a=el("a",{href:URL.createObjectURL(new Blob(["﻿"+lines.join("\n")],{type:"text/csv"})),download:`classifica_${M.settimana_al}.csv`}); a.click();
+});
+
+// ---------- 5. Rendimenti ----------
+function renderYields(){
+  const Y=D.rendimenti||{}; const tiles=document.getElementById("y-tiles"); tiles.replaceChildren();
+  Object.values(Y).forEach(y=> tiles.append(el("div",{class:"tile"}, el("div",{class:"muted"},y.nome), el("div",{class:"v"},nf(y.ultimo,2)+"%"),
+    el("div",{class:"muted"}, y.var_1==null?"":`${y.var_1>0?"+":""}${nf(y.var_1*100,0)} pb ${y.mensile?"sul mese":"sulla settimana"}`))));
+  const it=Y["IRLTLT01ITM156N"], de=Y["IRLTLT01DEM156N"];
+  if(it&&de){ const sp=(it.ultimo-de.ultimo)*100; tiles.append(el("div",{class:"tile"}, el("div",{class:"muted"},"Spread BTP-Bund 10 anni"), el("div",{class:"v"},nf(sp,0)+" pb"), el("div",{class:"muted"},"dato mensile"))); }
+
+  const drawGroup=(canvasId,legendId,list)=>{
+    const lg=document.getElementById(legendId); lg.replaceChildren();
+    if(!list.length){ document.getElementById(canvasId).parentElement.replaceChildren(el("div",{class:"empty"},"Dati non disponibili")); return; }
+    const labels=[...new Set(list.flatMap(([_,y])=>y.d))].sort();
+    const ds=list.map(([id,y],i)=>{ const col=css(`--s${i+1}`); const map=Object.fromEntries(y.d.map((d,j)=>[d,y.v[j]]));
+      lg.append(el("span",{},el("i",{class:"ln",style:`background:${col}`}),y.nome));
+      return lineDs(y.nome,labels.map(d=>map[d]??null),col); });
+    const o=baseOpts(); o.scales.y.ticks.callback=v=>v+"%"; o.plugins.tooltip.callbacks={label:c=>` ${nf(c.parsed.y,2)}%  ${c.dataset.label}`};
+    mk(canvasId,{type:"line",data:{labels:labels.map(shortDate),datasets:ds},options:o});
+  };
+  const entries=Object.entries(Y);
+  drawGroup("c-yw","legend-yw",entries.filter(([_,y])=>!y.mensile));
+  drawGroup("c-ym","legend-ym",entries.filter(([_,y])=>y.mensile));
+}
+
+// ---------- 6. Avvisi ----------
+function renderWarnings(){
+  const s=document.getElementById("warn-sec"); s.replaceChildren();
+  if(!M.avvisi||!M.avvisi.length) return;
+  s.append(el("details",{class:"card"}, el("summary",{},`Avvisi dell'ultimo aggiornamento (${M.avvisi.length})`),
+    el("ul",{class:"muted"}, M.avvisi.map(a=>el("li",{},a)))));
+}
+
+function renderAll(){ renderKpis(); renderAreaChart(); renderBars(); renderPicker(); renderSel(); renderTable(); renderYields(); renderWarnings(); }
+// selezione iniziale: il migliore per punteggio di ogni area
+AREA_KEYS.forEach(k=>{ const t=D.aree[k].titoli[0]; if(t){ state.colorOf[t.ticker]=state.sel.length+1; state.sel.push(t.ticker);} });
+renderAll();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",renderAll);
+})();
+</script>
+</body>
+</html>
