@@ -132,34 +132,81 @@ def download_prices(tickers: list[str], errors: list[str]) -> pd.DataFrame:
 # ----------------------------------------------------------------------------
 #  Download rendimenti (FRED / BCE) – endpoint CSV pubblici, nessuna chiave
 # ----------------------------------------------------------------------------
-def download_yields(cfg: dict, errors: list[str]) -> dict[str, pd.Series]:
+def _fetch_yield(fonte: str, sid: str, headers: dict, timeout: int) -> pd.Series:
     import requests
 
+    if fonte == "fred":
+        url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+        r = requests.get(url, headers=headers, timeout=timeout)
+        r.raise_for_status()
+        d = pd.read_csv(io.StringIO(r.text))
+        d.columns = ["date", "value"]
+    elif fonte == "ecb":
+        url = f"https://data-api.ecb.europa.eu/service/data/{sid}?format=csvdata&startPeriod=2020-01-01"
+        r = requests.get(url, headers=headers, timeout=timeout)
+        r.raise_for_status()
+        d = pd.read_csv(io.StringIO(r.text))[["TIME_PERIOD", "OBS_VALUE"]]
+        d.columns = ["date", "value"]
+    elif fonte == "yahoo":
+        import yfinance as yf
+        raw = yf.download(sid, period=HISTORY_PERIOD, interval="1d", progress=False)
+        s = _extract_close(raw, sid)
+        if s is None:
+            raise ValueError("nessun dato")
+        d = pd.DataFrame({"date": s.index, "value": s.values})
+    else:
+        raise ValueError(f"fonte sconosciuta {fonte}")
+    d["date"] = pd.to_datetime(d["date"])
+    d["value"] = pd.to_numeric(d["value"], errors="coerce")
+    s = d.dropna().set_index("date")["value"]
+    s.index = s.index.tz_localize(None) if s.index.tz is not None else s.index
+    s = s[s.index >= pd.Timestamp.today() - pd.DateOffset(years=3)]
+    if s.empty:
+        raise ValueError("serie vuota")
+    return s
+
+
+def download_yields(cfg: dict, errors: list[str]) -> dict[str, pd.Series]:
+    """Per ogni rendimento prova la fonte principale e poi le alternative (campo 'alternative')."""
     out = {}
     headers = {"User-Agent": "Mozilla/5.0 (weekly-market-dashboard)"}
+    down: set[str] = set()   # fonti che non rispondono: non le riprovo per gli altri titoli
     for y in cfg.get("rendimenti", []):
-        try:
-            if y["fonte"] == "fred":
-                url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={y['id']}"
-                r = requests.get(url, headers=headers, timeout=30)
-                r.raise_for_status()
-                d = pd.read_csv(io.StringIO(r.text))
-                d.columns = ["date", "value"]
-            elif y["fonte"] == "ecb":
-                url = f"https://data-api.ecb.europa.eu/service/data/{y['id']}?format=csvdata&startPeriod=2020-01-01"
-                r = requests.get(url, headers=headers, timeout=30)
-                r.raise_for_status()
-                d = pd.read_csv(io.StringIO(r.text))[["TIME_PERIOD", "OBS_VALUE"]]
-                d.columns = ["date", "value"]
-            else:
+        tentativi = [(y["fonte"], y["id"])] + [(a["fonte"], a["id"]) for a in y.get("alternative", [])]
+        problemi = []
+        for fonte, sid in tentativi:
+            if fonte in down:
+                problemi.append(f"{fonte}: non raggiungibile")
                 continue
-            d["date"] = pd.to_datetime(d["date"])
-            d["value"] = pd.to_numeric(d["value"], errors="coerce")
-            s = d.dropna().set_index("date")["value"]
-            out[y["id"]] = s[s.index >= pd.Timestamp.today() - pd.DateOffset(years=3)]
-        except Exception as e:
-            errors.append(f"Rendimento '{y['nome']}' non scaricato ({y['fonte']}): {e}")
+            try:
+                for attempt in range(2):
+                    try:
+                        out[y["id"]] = _fetch_yield(fonte, sid, headers, timeout=45)
+                        break
+                    except Exception:
+                        if attempt == 1:
+                            raise
+                        time.sleep(5)
+                break
+            except Exception as e:
+                problemi.append(f"{fonte}: {str(e)[:80]}")
+                if "timed out" in str(e).lower() or "connection" in str(e).lower():
+                    down.add(fonte)
+        if y["id"] not in out:
+            errors.append(f"Rendimento '{y['nome']}' non scaricato ({'; '.join(problemi)})")
+        elif len(problemi):
+            errors.append(f"Rendimento '{y['nome']}' preso dalla fonte alternativa ({'; '.join(problemi)})")
     return out
+
+
+def previous_yields() -> dict:
+    """Rendimenti salvati nell'aggiornamento precedente (usati se oggi le fonti non rispondono)."""
+    try:
+        t = (DOCS_DIR / "data.js").read_text(encoding="utf-8")
+        d = json.loads(t[t.index("=") + 1:].strip().rstrip(";"))
+        return {} if d.get("meta", {}).get("demo") else d.get("rendimenti", {})
+    except Exception:
+        return {}
 
 
 # ----------------------------------------------------------------------------
@@ -390,9 +437,12 @@ def main() -> int:
         series[t] = {"d": [d.strftime("%Y-%m-%d") for d in s.index], "c": [float(x) for x in s.values]}
 
     yields_out = {}
+    prev = {} if args.demo else previous_yields()
     for y in cfg.get("rendimenti", []):
         s = yields.get(y["id"])
         if s is None or s.empty:
+            if y["id"] in prev:   # tengo l'ultimo dato valido
+                yields_out[y["id"]] = {**prev[y["id"]], "nome": y["nome"] + " (dato precedente)"}
             continue
         monthly = "M156N" in y["id"]
         ws = s if monthly else s.resample("W-FRI").last().dropna()
