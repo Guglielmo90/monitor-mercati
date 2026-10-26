@@ -108,11 +108,15 @@ aree:
 # ---------------------------------------------------------------------
 #  RENDIMENTI DEI TITOLI DI STATO (pannello "Tassi")
 #  fonte: FRED (Federal Reserve St. Louis) e BCE - nessuna chiave API.
-#  Nota: i decennali IT/DE su FRED sono a frequenza MENSILE.
+#  "alternative": fonti di riserva usate se la principale non risponde.
+#  Nota: i decennali IT/DE sono a frequenza MENSILE.
 # ---------------------------------------------------------------------
 rendimenti:
-  - { id: "DGS10",            fonte: "fred", nome: "Treasury USA 10 anni" }
+  - { id: "DGS10",            fonte: "fred", nome: "Treasury USA 10 anni",
+      alternative: [ { fonte: "yahoo", id: "^TNX" } ] }
   - { id: "DGS2",             fonte: "fred", nome: "Treasury USA 2 anni" }
-  - { id: "IRLTLT01ITM156N",  fonte: "fred", nome: "BTP Italia 10 anni (mensile)" }
-  - { id: "IRLTLT01DEM156N",  fonte: "fred", nome: "Bund Germania 10 anni (mensile)" }
+  - { id: "IRLTLT01ITM156N",  fonte: "fred", nome: "BTP Italia 10 anni (mensile)",
+      alternative: [ { fonte: "ecb", id: "IRS/M.IT.L.L40.CI.0000.EUR.N.Z" } ] }
+  - { id: "IRLTLT01DEM156N",  fonte: "fred", nome: "Bund Germania 10 anni (mensile)",
+      alternative: [ { fonte: "ecb", id: "IRS/M.DE.L.L40.CI.0000.EUR.N.Z" } ] }
   - { id: "YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y", fonte: "ecb", nome: "Curva BCE Area Euro AAA 10 anni" }
