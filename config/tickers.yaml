@@ -41,6 +41,7 @@ aree:
       - { ticker: "META",     nome: "Meta Platforms",      gruppo: "USA" }
       - { ticker: "TSLA",     nome: "Tesla",               gruppo: "USA" }
       - { ticker: "JPM",      nome: "JPMorgan Chase",      gruppo: "USA" }
+      - { ticker: "SPCX",     nome: "SpaceX",              gruppo: "USA" }   # quotata dal 12/06/2026
       # --- Large cap Europa ---
       - { ticker: "ASML.AS",  nome: "ASML",                gruppo: "Europa" }
       - { ticker: "SAP.DE",   nome: "SAP",                 gruppo: "Europa" }
