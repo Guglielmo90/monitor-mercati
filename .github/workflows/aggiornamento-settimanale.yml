@@ -1,0 +1,69 @@
+name: Aggiornamento settimanale
+
+# GitHub esprime gli orari in UTC: due pianificazioni coprono ora legale e ora solare,
+# il primo step lascia proseguire solo quella che corrisponde alle 22:30 di Roma.
+on:
+  schedule:
+    - cron: "30 20 * * 5"   # venerdì 22:30 ora legale italiana (CEST, UTC+2)
+    - cron: "30 21 * * 5"   # venerdì 22:30 ora solare italiana (CET, UTC+1)
+  workflow_dispatch:         # pulsante "Run workflow" per aggiornare a mano
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aggiornamento
+  cancel-in-progress: false
+
+jobs:
+  aggiorna:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Controllo fuso orario (Europe/Rome)
+        id: gate
+        run: |
+          OFFSET=$(TZ=Europe/Rome date +%z)
+          RUN=true
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ "${{ github.event.schedule }}" = "30 20 * * 5" ] && [ "$OFFSET" != "+0200" ]; then RUN=false; fi
+            if [ "${{ github.event.schedule }}" = "30 21 * * 5" ] && [ "$OFFSET" != "+0100" ]; then RUN=false; fi
+          fi
+          echo "Offset Roma: $OFFSET -> esecuzione: $RUN"
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Installa dipendenze
+        if: steps.gate.outputs.run == 'true'
+        run: pip install -r requirements.txt
+
+      - name: Scarica libreria grafici (Chart.js)
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          [ -f docs/chart.umd.min.js ] || curl -sSfL -o docs/chart.umd.min.js https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js
+          touch docs/.nojekyll
+
+      - name: Scarica dati e calcola indicatori
+        if: steps.gate.outputs.run == 'true'
+        run: python scripts/fetch_data.py
+
+      - name: Salva i nuovi dati nel repository
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          git config user.name  "monitor-mercati-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data docs
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica ai dati."
+          else
+            git commit -m "Aggiornamento dati: $(TZ=Europe/Rome date '+%d/%m/%Y %H:%M')"
+            git push
+          fi
