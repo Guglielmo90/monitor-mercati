@@ -1,0 +1,118 @@
+# =====================================================================
+#  UNIVERSO TITOLI MONITORATI
+#  - "ticker" = simbolo Yahoo Finance (Borsa Italiana -> suffisso .MI)
+#  - Per aggiungere/rimuovere un titolo basta modificare questo file:
+#    al prossimo aggiornamento comparirà (o sparirà) dalla dashboard.
+#  - Se un ticker non viene trovato, compare nel registro errori della
+#    dashboard e viene saltato senza bloccare il resto.
+# =====================================================================
+
+aree:
+  azioni:
+    nome: "Azioni"
+    titoli:
+      # --- FTSE MIB ---
+      - { ticker: "ENI.MI",   nome: "Eni",                 gruppo: "Italia" }
+      - { ticker: "ENEL.MI",  nome: "Enel",                gruppo: "Italia" }
+      - { ticker: "ISP.MI",   nome: "Intesa Sanpaolo",     gruppo: "Italia" }
+      - { ticker: "UCG.MI",   nome: "UniCredit",           gruppo: "Italia" }
+      - { ticker: "STLAM.MI", nome: "Stellantis",          gruppo: "Italia" }
+      - { ticker: "RACE.MI",  nome: "Ferrari",             gruppo: "Italia" }
+      - { ticker: "G.MI",     nome: "Generali",            gruppo: "Italia" }
+      - { ticker: "STMMI.MI", nome: "STMicroelectronics",  gruppo: "Italia" }
+      - { ticker: "PRY.MI",   nome: "Prysmian",            gruppo: "Italia" }
+      - { ticker: "LDO.MI",   nome: "Leonardo",            gruppo: "Italia" }
+      - { ticker: "TIT.MI",   nome: "Telecom Italia",      gruppo: "Italia" }
+      - { ticker: "MB.MI",    nome: "Mediobanca",          gruppo: "Italia" }
+      - { ticker: "BAMI.MI",  nome: "Banco BPM",           gruppo: "Italia" }
+      - { ticker: "PST.MI",   nome: "Poste Italiane",      gruppo: "Italia" }
+      - { ticker: "TRN.MI",   nome: "Terna",               gruppo: "Italia" }
+      - { ticker: "SRG.MI",   nome: "Snam",                gruppo: "Italia" }
+      - { ticker: "MONC.MI",  nome: "Moncler",             gruppo: "Italia" }
+      - { ticker: "CPR.MI",   nome: "Campari",             gruppo: "Italia" }
+      - { ticker: "A2A.MI",   nome: "A2A",                 gruppo: "Italia" }
+      - { ticker: "TEN.MI",   nome: "Tenaris",             gruppo: "Italia" }
+      # --- Large cap USA ---
+      - { ticker: "AAPL",     nome: "Apple",               gruppo: "USA" }
+      - { ticker: "MSFT",     nome: "Microsoft",           gruppo: "USA" }
+      - { ticker: "NVDA",     nome: "Nvidia",              gruppo: "USA" }
+      - { ticker: "AMZN",     nome: "Amazon",              gruppo: "USA" }
+      - { ticker: "GOOGL",    nome: "Alphabet",            gruppo: "USA" }
+      - { ticker: "META",     nome: "Meta Platforms",      gruppo: "USA" }
+      - { ticker: "TSLA",     nome: "Tesla",               gruppo: "USA" }
+      - { ticker: "JPM",      nome: "JPMorgan Chase",      gruppo: "USA" }
+      # --- Large cap Europa ---
+      - { ticker: "ASML.AS",  nome: "ASML",                gruppo: "Europa" }
+      - { ticker: "SAP.DE",   nome: "SAP",                 gruppo: "Europa" }
+      - { ticker: "MC.PA",    nome: "LVMH",                gruppo: "Europa" }
+      - { ticker: "NOVO-B.CO",nome: "Novo Nordisk",        gruppo: "Europa" }
+      - { ticker: "SIE.DE",   nome: "Siemens",             gruppo: "Europa" }
+      - { ticker: "NESN.SW",  nome: "Nestlé",              gruppo: "Europa" }
+      - { ticker: "TTE.PA",   nome: "TotalEnergies",       gruppo: "Europa" }
+
+  etf:
+    nome: "ETF"
+    titoli:
+      - { ticker: "SWDA.MI",  nome: "iShares Core MSCI World",        gruppo: "Globale" }
+      - { ticker: "VWCE.MI",  nome: "Vanguard FTSE All-World Acc",    gruppo: "Globale" }
+      - { ticker: "CSSPX.MI", nome: "iShares Core S&P 500",           gruppo: "USA" }
+      - { ticker: "EQQQ.MI",  nome: "Invesco Nasdaq-100",             gruppo: "USA" }
+      - { ticker: "VUSA.MI",  nome: "Vanguard S&P 500 Dist",          gruppo: "USA" }
+      - { ticker: "EIMI.MI",  nome: "iShares Core MSCI EM IMI",       gruppo: "Emergenti" }
+      - { ticker: "IMIB.MI",  nome: "iShares FTSE MIB",               gruppo: "Italia" }
+      - { ticker: "CSSX5E.MI",nome: "iShares Core EURO STOXX 50",     gruppo: "Europa" }
+      - { ticker: "MEUD.MI",  nome: "Amundi Core STOXX Europe 600",   gruppo: "Europa" }
+      - { ticker: "IWDA.AS",  nome: "iShares Core MSCI World (AMS)",  gruppo: "Globale" }
+      - { ticker: "SPY",      nome: "SPDR S&P 500 (USA)",             gruppo: "USA" }
+      - { ticker: "QQQ",      nome: "Invesco QQQ (USA)",              gruppo: "USA" }
+      - { ticker: "IWM",      nome: "iShares Russell 2000 (USA)",     gruppo: "USA" }
+      - { ticker: "VGK",      nome: "Vanguard FTSE Europe (USA)",     gruppo: "Europa" }
+      - { ticker: "EWJ",      nome: "iShares MSCI Japan (USA)",       gruppo: "Asia" }
+      - { ticker: "MCHI",     nome: "iShares MSCI China (USA)",       gruppo: "Asia" }
+      - { ticker: "XLK",      nome: "Technology Select Sector",       gruppo: "Settoriale" }
+      - { ticker: "XLE",      nome: "Energy Select Sector",           gruppo: "Settoriale" }
+      - { ticker: "XLF",      nome: "Financial Select Sector",        gruppo: "Settoriale" }
+      - { ticker: "XLV",      nome: "Health Care Select Sector",      gruppo: "Settoriale" }
+
+  obbligazioni:
+    nome: "Obbligazioni"
+    titoli:
+      # ETF obbligazionari (prezzo): rendimento in salita = prezzo in discesa
+      - { ticker: "BTP10.MI", nome: "Amundi BTP 10Y",                 gruppo: "Governativi IT" }
+      - { ticker: "IEAC.MI",  nome: "iShares Core EUR Corporate",     gruppo: "Corporate EUR" }
+      - { ticker: "IHYG.MI",  nome: "iShares EUR High Yield Corp",    gruppo: "High Yield" }
+      - { ticker: "AGGH.MI",  nome: "iShares Global Aggregate EUR-H", gruppo: "Globale" }
+      - { ticker: "TLT",      nome: "iShares 20+Y Treasury",          gruppo: "Governativi USA" }
+      - { ticker: "IEF",      nome: "iShares 7-10Y Treasury",         gruppo: "Governativi USA" }
+      - { ticker: "SHY",      nome: "iShares 1-3Y Treasury",          gruppo: "Governativi USA" }
+      - { ticker: "LQD",      nome: "iShares IG Corporate (USA)",     gruppo: "Corporate USD" }
+      - { ticker: "HYG",      nome: "iShares High Yield (USA)",       gruppo: "High Yield" }
+      - { ticker: "EMB",      nome: "iShares EM USD Bond",            gruppo: "Emergenti" }
+      - { ticker: "TIP",      nome: "iShares TIPS (inflazione USA)",  gruppo: "Inflation linked" }
+
+  commodities:
+    nome: "Commodities"
+    titoli:
+      - { ticker: "GC=F",  nome: "Oro",                gruppo: "Metalli preziosi" }
+      - { ticker: "SI=F",  nome: "Argento",            gruppo: "Metalli preziosi" }
+      - { ticker: "PL=F",  nome: "Platino",            gruppo: "Metalli preziosi" }
+      - { ticker: "HG=F",  nome: "Rame",               gruppo: "Metalli industriali" }
+      - { ticker: "CL=F",  nome: "Petrolio WTI",       gruppo: "Energia" }
+      - { ticker: "BZ=F",  nome: "Petrolio Brent",     gruppo: "Energia" }
+      - { ticker: "NG=F",  nome: "Gas naturale (USA)", gruppo: "Energia" }
+      - { ticker: "TTF=F", nome: "Gas TTF (Europa)",   gruppo: "Energia" }
+      - { ticker: "ZW=F",  nome: "Grano",              gruppo: "Agricole" }
+      - { ticker: "ZC=F",  nome: "Mais",               gruppo: "Agricole" }
+      - { ticker: "KC=F",  nome: "Caffè",              gruppo: "Agricole" }
+
+# ---------------------------------------------------------------------
+#  RENDIMENTI DEI TITOLI DI STATO (pannello "Tassi")
+#  fonte: FRED (Federal Reserve St. Louis) e BCE - nessuna chiave API.
+#  Nota: i decennali IT/DE su FRED sono a frequenza MENSILE.
+# ---------------------------------------------------------------------
+rendimenti:
+  - { id: "DGS10",            fonte: "fred", nome: "Treasury USA 10 anni" }
+  - { id: "DGS2",             fonte: "fred", nome: "Treasury USA 2 anni" }
+  - { id: "IRLTLT01ITM156N",  fonte: "fred", nome: "BTP Italia 10 anni (mensile)" }
+  - { id: "IRLTLT01DEM156N",  fonte: "fred", nome: "Bund Germania 10 anni (mensile)" }
+  - { id: "YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y", fonte: "ecb", nome: "Curva BCE Area Euro AAA 10 anni" }
