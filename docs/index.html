@@ -142,7 +142,7 @@ footer{margin-top:30px;color:var(--muted);font-size:12px;line-height:1.6}
     <div class="grid4" id="kpis"></div>
     <div class="card" style="margin-top:12px">
       <h2>Andamento delle aree</h2>
-      <div class="muted">Indice equipesato, base 100 all'inizio del periodo selezionato</div>
+      <div class="muted">Variazione % dall'inizio del periodo selezionato (media equipesata dei titoli dell'area)</div>
       <div class="legend" id="legend-areas"></div>
       <div class="chartbox" style="height:300px"><canvas id="c-areas" aria-label="Andamento indici d'area"></canvas></div>
     </div>
@@ -318,12 +318,14 @@ function renderAreaChart(){
     const s=D.indici_area[k]; const map=Object.fromEntries(s.d.map((d,i)=>[d,s.v[i]]));
     const vals=labels.map(d=>map[d]??null); const b=vals.find(v=>v!=null);
     const color=css(`--s${AREA_SLOT[k]||5}`);
-    const reb=vals.map(v=>v==null?null:v/b*100);
+    const reb=vals.map(v=>v==null?null:(v/b-1)*100);
     const last=reb[reb.length-1];
-    lg.append(el("span",{},el("i",{class:"ln",style:`background:${color}`}), `${D.aree[k].nome} `, el("b",{class:cls(last-100)}, pf(last-100,1))));
+    lg.append(el("span",{},el("i",{class:"ln",style:`background:${color}`}), `${D.aree[k].nome} `, el("b",{class:cls(last)}, pf(last,1))));
     return lineDs(D.aree[k].nome, reb, color);
   });
-  const o=baseOpts(); o.plugins.tooltip.callbacks={label:c=>` ${nf(c.parsed.y,1)}  ${c.dataset.label}`};
+  const o=baseOpts(); o.scales.y.ticks.callback=v=>(v>0?"+":"")+v+"%";
+  o.scales.y.grid.color=c=>c.tick&&c.tick.value===0?css("--axis"):css("--grid");
+  o.plugins.tooltip.callbacks={label:c=>` ${pf(c.parsed.y,1)}  ${c.dataset.label}`};
   mk("c-areas",{type:"line",data:{labels:labels.map(shortDate),datasets:ds},options:o});
 }
 
